@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Web Workers</title>
+    <style type="text/css">
+      #input {
+        width: 0px;
+        height: 0px;
+        overflow: hidden;
+      }
+      #input + label {
+        display: inline-block;
+        background-color: #777;
+        font-family: sans-serif;
+        padding: 5px;
+        font-size: 1.5em;
+        cursor: pointer;
+        color: #fff;
+      }
+
+      #input:focus + label {
+        outline: 5px solid teal;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <input type="file" accept="image/*" name="input" id="input" />
+      <label for="input">Choose File</label>
+    </div>
+    <canvas id="preview"></canvas>
+    <script type="text/javascript">
+      const $input = document.getElementById("input");
+      const $preview = document.getElementById("preview");
+      const previewCtx = $preview.getContext("2d");
+      const worker = new Worker("worker.js");
+
+      worker.addEventListener("message", (d) => {
+        const imageData = d.data;
+        previewCtx.putImageData(imageData, 0, 0);
+      });
+      //   const fileReader = new FileReader();
+      //   const image = new Image();
+
+      $input.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+
+        createImageBitmap(file).then((bitmap) => {
+          $preview.width = bitmap.width;
+          $preview.height = bitmap.height;
+          previewCtx.drawImage(bitmap, 0, 0);
+          applyFilter();
+        });
+        // gives back base64 of image
+        // fileReader.readAsDataURL(file);
+      });
+
+      //   fileReader.addEventListener("load", (e) => {
+      //     const base64 = e.target.result;
+      //     image.src = base64;
+      //   });
+
+      function applyFilter() {
+        const imageData = previewCtx.getImageData(
+          0,
+          0,
+          $preview.width,
+          $preview.height
+        );
+
+        worker.postMessage(imageData, [imageData.data.buffer]);
+      }
+
+      //   image.addEventListener("load", (e) => {
+      //     $preview.width = image.width;
+      //     $preview.height = image.height;
+
+      //     previewCtx.drawImage(image, 0, 0);
+      //     applyFilter();
+      //     // document.body.appendChild(image);
+      //   });
+    </script>
+  </body>
+</html>
